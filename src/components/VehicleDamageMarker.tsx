@@ -3,18 +3,32 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Marker {
   x: number; // Percentage from left
   y: number; // Percentage from top
+  annotation?: string; // Optional annotation text
 }
 
 const VehicleDamageMarker: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+
+  const [isAnnotationDialogOpen, setIsAnnotationDialogOpen] = useState(false);
+  const [currentMarkerIndex, setCurrentMarkerIndex] = useState<number | null>(null);
+  const [annotationText, setAnnotationText] = useState<string>("");
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -31,11 +45,42 @@ const VehicleDamageMarker: React.FC = () => {
   const handleImageClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!selectedImage || !imageContainerRef.current) return;
 
-    const rect = imageContainerRef.current.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100; // Percentage
-    const y = ((event.clientY - rect.top) / rect.height) * 100; // Percentage
+    // Only add a new marker if the click is directly on the image container, not on an existing marker
+    if (event.target === imageContainerRef.current) {
+      const rect = imageContainerRef.current.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 100; // Percentage
+      const y = ((event.clientY - rect.top) / rect.height) * 100; // Percentage
 
-    setMarkers((prevMarkers) => [...prevMarkers, { x, y }]);
+      setMarkers((prevMarkers) => [...prevMarkers, { x, y, annotation: "" }]);
+    }
+  };
+
+  const handleMarkerClick = (index: number) => {
+    setCurrentMarkerIndex(index);
+    setAnnotationText(markers[index].annotation || "");
+    setIsAnnotationDialogOpen(true);
+  };
+
+  const handleSaveAnnotation = () => {
+    if (currentMarkerIndex !== null) {
+      setMarkers((prevMarkers) =>
+        prevMarkers.map((marker, idx) =>
+          idx === currentMarkerIndex ? { ...marker, annotation: annotationText } : marker
+        )
+      );
+      setIsAnnotationDialogOpen(false);
+      setCurrentMarkerIndex(null);
+      setAnnotationText("");
+    }
+  };
+
+  const handleDeleteMarker = () => {
+    if (currentMarkerIndex !== null) {
+      setMarkers((prevMarkers) => prevMarkers.filter((_, idx) => idx !== currentMarkerIndex));
+      setIsAnnotationDialogOpen(false);
+      setCurrentMarkerIndex(null);
+      setAnnotationText("");
+    }
   };
 
   return (
@@ -70,11 +115,16 @@ const VehicleDamageMarker: React.FC = () => {
               <div
                 key={index}
                 className={cn(
-                  "absolute w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold cursor-pointer",
+                  "absolute w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer",
+                  marker.annotation ? "bg-blue-500 hover:bg-blue-600" : "bg-red-500 hover:bg-red-600",
                   "transform -translate-x-1/2 -translate-y-1/2"
                 )}
                 style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
-                title={`Marqueur ${index + 1}`}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent image click from firing
+                  handleMarkerClick(index);
+                }}
+                title={marker.annotation || `Marqueur ${index + 1}`}
               >
                 <PlusCircle className="w-4 h-4" />
               </div>
@@ -84,7 +134,7 @@ const VehicleDamageMarker: React.FC = () => {
 
         {selectedImage && markers.length > 0 && (
           <div className="mt-6 text-center text-gray-600">
-            <p>{markers.length} marqueur(s) placé(s). Cliquez sur l'image pour en ajouter d'autres.</p>
+            <p>{markers.length} marqueur(s) placé(s). Cliquez sur un marqueur pour ajouter une annotation.</p>
           </div>
         )}
 
@@ -100,6 +150,34 @@ const VehicleDamageMarker: React.FC = () => {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={isAnnotationDialogOpen} onOpenChange={setIsAnnotationDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Ajouter/Modifier l'annotation</DialogTitle>
+            <DialogDescription>
+              Décrivez le dommage pour ce marqueur.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Textarea
+              id="annotation"
+              value={annotationText}
+              onChange={(e) => setAnnotationText(e.target.value)}
+              placeholder="Ex: Rayure profonde sur la portière avant gauche."
+              className="col-span-3"
+            />
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
+            <Button variant="destructive" onClick={handleDeleteMarker} className="w-full sm:w-auto">
+              <Trash2 className="mr-2 h-4 w-4" /> Supprimer le marqueur
+            </Button>
+            <Button onClick={handleSaveAnnotation} className="w-full sm:w-auto">
+              Sauvegarder l'annotation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
