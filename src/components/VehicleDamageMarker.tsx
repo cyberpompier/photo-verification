@@ -14,11 +14,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label"; // Import Label
+import { Input } from "@/components/ui/input";   // Import Input
 
 interface Marker {
   x: number; // Percentage from left
   y: number; // Percentage from top
   annotation?: string; // Optional annotation text
+  date: string; // Date of the report
+  userName: string; // User who made the report
 }
 
 const VehicleDamageMarker: React.FC = () => {
@@ -29,6 +33,7 @@ const VehicleDamageMarker: React.FC = () => {
   const [isAnnotationDialogOpen, setIsAnnotationDialogOpen] = useState(false);
   const [currentMarkerIndex, setCurrentMarkerIndex] = useState<number | null>(null);
   const [annotationText, setAnnotationText] = useState<string>("");
+  const [userNameText, setUserNameText] = useState<string>(""); // New state for user name
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -51,13 +56,14 @@ const VehicleDamageMarker: React.FC = () => {
       const x = ((event.clientX - rect.left) / rect.width) * 100; // Percentage
       const y = ((event.clientY - rect.top) / rect.height) * 100; // Percentage
 
-      setMarkers((prevMarkers) => [...prevMarkers, { x, y, annotation: "" }]);
+      setMarkers((prevMarkers) => [...prevMarkers, { x, y, annotation: "", date: new Date().toLocaleDateString(), userName: "" }]);
     }
   };
 
   const handleMarkerClick = (index: number) => {
     setCurrentMarkerIndex(index);
     setAnnotationText(markers[index].annotation || "");
+    setUserNameText(markers[index].userName || ""); // Set user name for editing
     setIsAnnotationDialogOpen(true);
   };
 
@@ -65,12 +71,13 @@ const VehicleDamageMarker: React.FC = () => {
     if (currentMarkerIndex !== null) {
       setMarkers((prevMarkers) =>
         prevMarkers.map((marker, idx) =>
-          idx === currentMarkerIndex ? { ...marker, annotation: annotationText } : marker
+          idx === currentMarkerIndex ? { ...marker, annotation: annotationText, userName: userNameText } : marker
         )
       );
       setIsAnnotationDialogOpen(false);
       setCurrentMarkerIndex(null);
       setAnnotationText("");
+      setUserNameText(""); // Reset user name text
     }
   };
 
@@ -80,6 +87,7 @@ const VehicleDamageMarker: React.FC = () => {
       setIsAnnotationDialogOpen(false);
       setCurrentMarkerIndex(null);
       setAnnotationText("");
+      setUserNameText(""); // Reset user name text
     }
   };
 
@@ -160,13 +168,29 @@ const VehicleDamageMarker: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <Textarea
-              id="annotation"
-              value={annotationText}
-              onChange={(e) => setAnnotationText(e.target.value)}
-              placeholder="Ex: Rayure profonde sur la portière avant gauche."
-              className="col-span-3"
-            />
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="userName">Nom de l'utilisateur</Label>
+              <Input
+                id="userName"
+                value={userNameText}
+                onChange={(e) => setUserNameText(e.target.value)}
+                placeholder="Votre nom"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="annotation">Annotation</Label>
+              <Textarea
+                id="annotation"
+                value={annotationText}
+                onChange={(e) => setAnnotationText(e.target.value)}
+                placeholder="Ex: Rayure profonde sur la portière avant gauche."
+              />
+            </div>
+            {currentMarkerIndex !== null && markers[currentMarkerIndex] && (
+              <p className="text-sm text-gray-500">
+                Signalé le: {markers[currentMarkerIndex].date}
+              </p>
+            )}
           </div>
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
             <Button variant="destructive" onClick={handleDeleteMarker} className="w-full sm:w-auto">
