@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Maximize, Plus, Minus } from "lucide-react"; // Added Maximize, Plus, Minus icons
+import { PlusCircle, Trash2, Maximize, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -35,8 +35,8 @@ const VehicleDamageMarker: React.FC = () => {
   const [annotationText, setAnnotationText] = useState<string>("");
   const [userNameText, setUserNameText] = useState<string>("");
 
-  const [isFullScreenOpen, setIsFullScreenOpen] = useState(false); // New state for full screen dialog
-  const [zoomLevel, setZoomLevel] = useState(1); // New state for zoom level
+  const [isFullScreenOpen, setIsFullScreenOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -177,13 +177,33 @@ const VehicleDamageMarker: React.FC = () => {
 
         {selectedImage && markers.length === 0 && (
           <div className="mt-6 text-center text-gray-600">
-            <p>Cliquez sur l'image pour ajouter des marqueurs de dommages.</p>
+            <p>Veuillez télécharger une image pour commencer.</p>
           </div>
         )}
 
         {!selectedImage && (
           <div className="mt-6 text-center text-gray-500">
             <p>Veuillez télécharger une image pour commencer.</p>
+          </div>
+        )}
+
+        {selectedImage && markers.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-3">Détails des dommages signalés :</h3>
+            <ul className="space-y-2">
+              {markers.map((marker, index) => (
+                <li key={index} className="p-3 border rounded-md bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                  <div className="text-left">
+                    <p className="font-medium">Marqueur {index + 1}: {marker.annotation || "Aucune annotation"}</p>
+                    <p className="text-sm text-gray-600">Signalé par: {marker.userName || "Inconnu"}</p>
+                    <p className="text-sm text-gray-600">Date: {marker.date}</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => handleMarkerClick(index)} className="mt-2 sm:mt-0">
+                    Modifier
+                  </Button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </CardContent>
