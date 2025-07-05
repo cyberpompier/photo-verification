@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Maximize, Plus, Minus } from "lucide-react"; // Added Maximize, Plus, Minus icons
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -14,8 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label"; // Import Label
-import { Input } from "@/components/ui/input";   // Import Input
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface Marker {
   x: number; // Percentage from left
@@ -33,7 +33,10 @@ const VehicleDamageMarker: React.FC = () => {
   const [isAnnotationDialogOpen, setIsAnnotationDialogOpen] = useState(false);
   const [currentMarkerIndex, setCurrentMarkerIndex] = useState<number | null>(null);
   const [annotationText, setAnnotationText] = useState<string>("");
-  const [userNameText, setUserNameText] = useState<string>(""); // New state for user name
+  const [userNameText, setUserNameText] = useState<string>("");
+
+  const [isFullScreenOpen, setIsFullScreenOpen] = useState(false); // New state for full screen dialog
+  const [zoomLevel, setZoomLevel] = useState(1); // New state for zoom level
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -63,7 +66,7 @@ const VehicleDamageMarker: React.FC = () => {
   const handleMarkerClick = (index: number) => {
     setCurrentMarkerIndex(index);
     setAnnotationText(markers[index].annotation || "");
-    setUserNameText(markers[index].userName || ""); // Set user name for editing
+    setUserNameText(markers[index].userName || "");
     setIsAnnotationDialogOpen(true);
   };
 
@@ -77,7 +80,7 @@ const VehicleDamageMarker: React.FC = () => {
       setIsAnnotationDialogOpen(false);
       setCurrentMarkerIndex(null);
       setAnnotationText("");
-      setUserNameText(""); // Reset user name text
+      setUserNameText("");
     }
   };
 
@@ -87,8 +90,21 @@ const VehicleDamageMarker: React.FC = () => {
       setIsAnnotationDialogOpen(false);
       setCurrentMarkerIndex(null);
       setAnnotationText("");
-      setUserNameText(""); // Reset user name text
+      setUserNameText("");
     }
+  };
+
+  const handleOpenFullScreen = () => {
+    setIsFullScreenOpen(true);
+    setZoomLevel(1); // Reset zoom when opening full screen
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(prev + 0.1, 3)); // Max zoom 3x
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => Math.max(prev - 0.1, 0.5)); // Min zoom 0.5x
   };
 
   return (
@@ -119,6 +135,19 @@ const VehicleDamageMarker: React.FC = () => {
             style={{ paddingTop: '75%', backgroundImage: `url(${selectedImage})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}
             onClick={handleImageClick}
           >
+            {/* Fullscreen button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute top-2 right-2 z-10 bg-white/80 hover:bg-white"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent image click from adding marker
+                handleOpenFullScreen();
+              }}
+            >
+              <Maximize className="h-4 w-4" />
+            </Button>
+
             {markers.map((marker, index) => (
               <div
                 key={index}
@@ -198,6 +227,36 @@ const VehicleDamageMarker: React.FC = () => {
             </Button>
             <Button onClick={handleSaveAnnotation} className="w-full sm:w-auto">
               Sauvegarder l'annotation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fullscreen Dialog for Image Zoom */}
+      <Dialog open={isFullScreenOpen} onOpenChange={setIsFullScreenOpen}>
+        <DialogContent className="max-w-screen-xl h-[90vh] p-0 flex flex-col">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle>Image du Véhicule</DialogTitle>
+            <DialogDescription>
+              Visualisation en plein écran de l'image du véhicule.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative flex-grow overflow-auto flex items-center justify-center p-4">
+            {selectedImage && (
+              <img
+                src={selectedImage}
+                alt="Véhicule en plein écran"
+                className="max-w-full max-h-full object-contain transition-transform duration-100 ease-out"
+                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
+              />
+            )}
+          </div>
+          <DialogFooter className="p-4 pt-0 flex justify-center gap-2">
+            <Button onClick={handleZoomOut} disabled={zoomLevel <= 0.5}>
+              <Minus className="h-4 w-4 mr-2" /> Zoom arrière
+            </Button>
+            <Button onClick={handleZoomIn} disabled={zoomLevel >= 3}>
+              <Plus className="h-4 w-4 mr-2" /> Zoom avant
             </Button>
           </DialogFooter>
         </DialogContent>
