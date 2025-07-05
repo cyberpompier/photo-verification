@@ -153,7 +153,7 @@ const VehicleDamageMarker: React.FC = () => {
                 key={index}
                 className={cn(
                   "absolute w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer",
-                  marker.annotation ? "bg-blue-500 hover:bg-blue-600" : "bg-red-500 hover:bg-red-600",
+                  marker.annotation && marker.userName ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600",
                   "transform -translate-x-1/2 -translate-y-1/2"
                 )}
                 style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
